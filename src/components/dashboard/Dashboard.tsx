@@ -292,9 +292,15 @@ export function Dashboard() {
           </ChartCard>
         </section>
 
-        {/* SECTION 2: TACTICAL 2022 */}
+        {/* SECTION 2: TOP SCORERS */}
         <section id="section-1" className="space-y-5">
-          <SectionHeader index="02" label="Qatar 2022 · Tactical" title="What predicts a goal?" />
+          <SectionHeader index="02" label="Top Scorers · 1930 — 2022" title="The all-time leaderboard" />
+          <TopScorers />
+        </section>
+
+        {/* SECTION 3: TACTICAL 2022 */}
+        <section id="section-2" className="space-y-5">
+          <SectionHeader index="03" label="Qatar 2022 · Tactical" title="What predicts a goal?" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ScatterCard title="Possession vs Goals" subtitle="weak correlation · r ≈ 0.31" accent="magenta"
               xKey="possession" xLabel="Possession %" yKey="goals" yLabel="Goals" data={filteredTeams2022} />
@@ -329,8 +335,8 @@ export function Dashboard() {
           </ChartCard>
         </section>
 
-        {/* SECTION 3: INSIGHTS */}
-        <section id="section-2">
+        {/* SECTION 4: INSIGHTS */}
+        <section id="section-3">
           <Insights />
         </section>
 
