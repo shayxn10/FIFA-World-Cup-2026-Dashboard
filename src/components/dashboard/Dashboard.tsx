@@ -7,10 +7,12 @@ import { motion } from "framer-motion";
 import { ChartCard } from "@/components/dashboard/ChartCard";
 import { Flag } from "@/components/dashboard/Flag";
 import { Insights } from "@/components/dashboard/Insights";
+import { TopScorers } from "@/components/dashboard/TopScorers";
 import {
   goalsByMinute, goalsByInterval, stageGoals, topTeams,
   teamTimeBuckets, teams2022, flag,
 } from "@/data/wcData";
+import fifaLogo from "@/assets/fifa-wc-logo.png";
 
 const axis = { stroke: "var(--muted-foreground)", fontSize: 11, fontFamily: "var(--font-mono)" };
 const grid = { stroke: "var(--border)", strokeDasharray: "3 3", opacity: 0.4 };
