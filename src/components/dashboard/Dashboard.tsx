@@ -128,9 +128,9 @@ export function Dashboard() {
                 happen.
               </h2>
               <p className="mt-6 text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed">
-                Nine decades of FIFA World Cup scoring decoded — combining historical goal
-                patterns with deep tactical analysis from Qatar 2022. Possession isn't king.
-                Shots are.
+                Nine decades of FIFA World Cup scoring, combined with tactical and player-level
+                analysis from Qatar 2022. Every figure below describes a correlation observed in
+                the data — not a causal claim.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <a href="#section-0" className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider bg-foreground text-background rounded-sm hover:bg-foreground/90 transition-colors">
