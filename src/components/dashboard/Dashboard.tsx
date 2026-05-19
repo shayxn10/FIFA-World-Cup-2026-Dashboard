@@ -94,7 +94,8 @@ export function Dashboard() {
               { l: "Historical", i: 0 },
               { l: "Top Scorers", i: 1 },
               { l: "Tactical 2022", i: 2 },
-              { l: "Insights", i: 3 },
+              { l: "Players 2022", i: 3 },
+              { l: "Insights", i: 4 },
             ].map((t) => (
               <a key={t.l} href={`#section-${t.i}`} className="px-3 py-2 text-muted-foreground hover:text-foreground border-b-2 border-transparent hover:border-accent transition-colors">
                 {t.l}
