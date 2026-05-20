@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ScatterChart, Scatter, Legend, ReferenceLine, Cell,
