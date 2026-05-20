@@ -103,6 +103,9 @@ export function Dashboard() {
                 {t.l}
               </a>
             ))}
+            <Link to="/simulator" className="px-3 py-2 text-accent border-b-2 border-transparent hover:border-accent transition-colors">
+              ⚽ Simulator
+            </Link>
           </nav>
           <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
             <span className="h-1.5 w-1.5 rounded-full bg-pitch animate-pulse" />
@@ -110,6 +113,7 @@ export function Dashboard() {
           </div>
         </div>
       </header>
+
 
       <main className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
         {/* HERO */}
