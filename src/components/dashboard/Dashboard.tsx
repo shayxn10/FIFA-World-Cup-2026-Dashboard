@@ -65,6 +65,16 @@ export function Dashboard() {
   const [phase, setPhase] = useState<Phase>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
   const [selectedMatch, setSelectedMatch] = useState<string>("all");
+  const [navOpen, setNavOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { l: "Historical", h: "#section-0" },
+    { l: "Top Scorers", h: "#section-1" },
+    { l: "Tactical 2022", h: "#section-2" },
+    { l: "Players 2022", h: "#section-3" },
+    { l: "Insights", h: "#section-4" },
+  ];
+
 
   const filteredStage = useMemo(() => {
     if (phase === "all") return stageGoals;
