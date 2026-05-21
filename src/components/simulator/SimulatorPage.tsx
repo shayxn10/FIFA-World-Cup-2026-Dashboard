@@ -168,9 +168,10 @@ export function SimulatorPage() {
   }
 
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="min-h-screen text-foreground" style={{ paddingTop: "var(--ticker-h, 36px)" }}>
+      <LiveScoreBar />
       {/* Top navbar */}
-      <header className="border-b border-border/60 backdrop-blur-xl sticky top-0 z-40 bg-background/85">
+      <header className="border-b border-border/60 backdrop-blur-xl sticky z-40 bg-background/85" style={{ top: "var(--ticker-h, 36px)" }}>
         <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--accent) 0%, var(--accent) 33%, var(--foreground) 33%, var(--foreground) 66%, var(--pitch) 66%, var(--pitch) 100%)" }} />
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 group">
