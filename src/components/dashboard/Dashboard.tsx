@@ -4,12 +4,14 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ScatterChart, Scatter, Legend, ReferenceLine, Cell,
 } from "recharts";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChartCard } from "@/components/dashboard/ChartCard";
 import { Flag } from "@/components/dashboard/Flag";
 import { Insights } from "@/components/dashboard/Insights";
 import { TopScorers } from "@/components/dashboard/TopScorers";
 import { PlayerAnalysis } from "@/components/dashboard/PlayerAnalysis";
+import { LiveScoreBar } from "@/components/LiveScoreBar/LiveScoreBar";
+import { TournamentStatus } from "@/components/TournamentStatus/TournamentStatus";
 import {
   goalsByMinute, goalsByInterval, stageGoals, topTeams,
   teamTimeBuckets, teams2022, flag,
@@ -63,6 +65,16 @@ export function Dashboard() {
   const [phase, setPhase] = useState<Phase>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
   const [selectedMatch, setSelectedMatch] = useState<string>("all");
+  const [navOpen, setNavOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { l: "Historical", h: "#section-0" },
+    { l: "Top Scorers", h: "#section-1" },
+    { l: "Tactical 2022", h: "#section-2" },
+    { l: "Players 2022", h: "#section-3" },
+    { l: "Insights", h: "#section-4" },
+  ];
+
 
   const filteredStage = useMemo(() => {
     if (phase === "all") return stageGoals;
@@ -79,27 +91,22 @@ export function Dashboard() {
   const goals2022 = teams2022.reduce((s, t) => s + t.goals, 0);
 
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="min-h-screen text-foreground" style={{ paddingTop: "var(--ticker-h, 36px)" }}>
+      <LiveScoreBar />
       {/* HEADER */}
-      <header className="border-b border-border/60 backdrop-blur-xl sticky top-0 z-50 bg-background/85">
+      <header className="border-b border-border/60 backdrop-blur-xl sticky z-50 bg-background/85" style={{ top: "var(--ticker-h, 36px)" }}>
         <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--accent) 0%, var(--accent) 33%, var(--foreground) 33%, var(--foreground) 66%, var(--pitch) 66%, var(--pitch) 100%)" }} />
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src={fifaLogo} alt="FIFA World Cup" className="h-11 w-11 rounded-md object-cover ring-1 ring-border/60" />
-            <div className="leading-tight">
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground">FIFA · Official Data</p>
-              <h1 className="text-base sm:text-lg font-black tracking-tight uppercase">World Cup Analytics</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={fifaLogo} alt="FIFA World Cup" className="h-11 w-11 rounded-md object-cover ring-1 ring-border/60 flex-shrink-0" />
+            <div className="leading-tight min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground truncate">FIFA · Official Data</p>
+              <h1 className="text-base sm:text-lg font-black tracking-tight uppercase truncate">World Cup Analytics</h1>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-0 text-[11px] font-bold uppercase tracking-wider">
-            {[
-              { l: "Historical", i: 0 },
-              { l: "Top Scorers", i: 1 },
-              { l: "Tactical 2022", i: 2 },
-              { l: "Players 2022", i: 3 },
-              { l: "Insights", i: 4 },
-            ].map((t) => (
-              <a key={t.l} href={`#section-${t.i}`} className="px-3 py-2 text-muted-foreground hover:text-foreground border-b-2 border-transparent hover:border-accent transition-colors">
+          <nav className="hidden lg:flex items-center gap-0 text-[11px] font-bold uppercase tracking-wider">
+            {NAV_LINKS.map((t) => (
+              <a key={t.l} href={t.h} className="px-3 py-2 text-muted-foreground hover:text-foreground border-b-2 border-transparent hover:border-accent transition-colors">
                 {t.l}
               </a>
             ))}
@@ -107,15 +114,63 @@ export function Dashboard() {
               ⚽ Simulator
             </Link>
           </nav>
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+          <div className="hidden xl:flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
             <span className="h-1.5 w-1.5 rounded-full bg-pitch animate-pulse" />
             <span className="text-muted-foreground">Live dataset</span>
           </div>
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(o => !o)}
+            className="lg:hidden inline-flex items-center justify-center text-foreground"
+            style={{ width: 44, height: 44 }}
+          >
+            <span className="text-2xl leading-none">{navOpen ? "✕" : "☰"}</span>
+          </button>
         </div>
+        {/* Mobile drawer */}
+        <AnimatePresence>
+          {navOpen && (
+            <>
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[999] lg:hidden"
+                style={{ top: "calc(var(--ticker-h, 36px) + 56px)", background: "rgba(0,0,0,0.4)" }}
+                onClick={() => setNavOpen(false)}
+              />
+              <motion.div
+                key="drawer"
+                initial={{ y: -8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed left-0 w-full z-[1000] lg:hidden"
+                style={{ top: "calc(var(--ticker-h, 36px) + 56px)", background: "#0a0e1a" }}
+              >
+                <div className="flex flex-col">
+                  {NAV_LINKS.map(l => (
+                    <a key={l.l} href={l.h} onClick={() => setNavOpen(false)}
+                      className="text-white text-sm font-bold uppercase tracking-wider hover:bg-white/5 flex items-center"
+                      style={{ height: 56, paddingLeft: 24 }}>
+                      {l.l}
+                    </a>
+                  ))}
+                  <Link to="/simulator" onClick={() => setNavOpen(false)}
+                    className="text-sm font-bold uppercase tracking-wider hover:bg-white/5 flex items-center"
+                    style={{ height: 56, paddingLeft: 24, color: "#f5a623" }}>
+                    ⚽ Simulator
+                  </Link>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
 
 
       <main className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
+
         {/* HERO */}
         <motion.section
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
@@ -166,6 +221,9 @@ export function Dashboard() {
             </div>
           </div>
         </motion.section>
+
+        {/* TOURNAMENT STATUS — three-phase block */}
+        <TournamentStatus />
 
         {/* FILTERS */}
         <section className="glass-card rounded-2xl p-4 sm:p-5 flex flex-wrap gap-4 items-center">

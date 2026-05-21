@@ -1,12 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTournament, type SimMode } from "@/store/useTournament";
+import { useTournament, engine } from "@/store/useTournament";
 import { ModeSelect } from "@/components/simulator/ModeSelect";
 import { TeamPicker } from "@/components/simulator/TeamPicker";
 import { MatchSimulatorCard } from "@/components/simulator/MatchSimulatorCard";
 import { KnockoutView } from "@/components/simulator/KnockoutView";
 import { StandingsDrawer } from "@/components/simulator/StandingsDrawer";
+import { ChampionReveal } from "@/components/simulator/ChampionReveal";
+import { LiveScoreBar } from "@/components/LiveScoreBar/LiveScoreBar";
 import { autoSimulate } from "@/utils/autoSimulate";
 import { CHRONOLOGICAL_IDS } from "@/data/wc2026Fixtures";
 import fifaLogo from "@/assets/fifa-wc-logo.png";
@@ -19,38 +21,53 @@ export function SimulatorPage() {
   // Mode selection flow
   const [pickingTeam, setPickingTeam] = useState(false);
 
-  // Find the next match needing user input
-  const needsInput = (idx: number): boolean => {
-    if (idx >= t.chronologicalMatches.length) return false;
-    const m = t.chronologicalMatches[idx];
-    if (!m || m.isComplete) return false;
-    if (!m.isReady) return false; // skip un-ready (TBD) matches
-    if (t.mode === "full") return true;
-    return m.team1 === t.selectedTeam || m.team2 === t.selectedTeam;
-  };
+  // Decide if a (fresh-engine) match needs user input
+  const requiresUserInput = useCallback(
+    (m: { team1: string; team2: string }) => {
+      if (t.mode === "full") return true;
+      return m.team1 === t.selectedTeam || m.team2 === t.selectedTeam;
+    },
+    [t.mode, t.selectedTeam],
+  );
 
-  // Auto-advance: skip completed / unready / auto-sim matches until user input needed
-  useEffect(() => {
+  // Auto-advance: always read fresh engine state. Hard-stop on isReady=false.
+  const advance = useCallback(() => {
     if (!t.mode) return;
-    let i = t.currentIndex;
-    let safety = 200;
-    while (i < t.chronologicalMatches.length && safety-- > 0) {
-      const m = t.chronologicalMatches[i];
-      if (!m) { i++; continue; }
-      if (m.isComplete) { i++; continue; }
-      if (!m.isReady) { i++; continue; } // bracket slot not resolved yet
-      if (needsInput(i)) break;
-      // Auto-simulate this match silently
-      const r = autoSimulate();
-      let winnerId: string | undefined;
-      if (m.stage !== "group" && r.goals1 === r.goals2) {
-        winnerId = Math.random() < 0.5 ? m.team1 : m.team2;
+    let safety = 250;
+    let stoppedAt: string | null = null;
+    while (safety-- > 0) {
+      const fresh = engine.getState();
+      const ordered = CHRONOLOGICAL_IDS
+        .map(id => fresh.resolvedMatches[id])
+        .filter((m): m is NonNullable<typeof m> => Boolean(m));
+      let didMutate = false;
+      for (const m of ordered) {
+        if (m.isComplete) continue;
+        if (!m.isReady) { stoppedAt = m.id; break; }
+        if (requiresUserInput(m)) { stoppedAt = m.id; break; }
+        // Auto-simulate this ready match.
+        const r = autoSimulate();
+        let winnerId: string | undefined;
+        if (m.stage !== "group" && r.goals1 === r.goals2) {
+          winnerId = Math.random() < 0.5 ? m.team1 : m.team2;
+        }
+        try {
+          t.setMatchResult(m.id, { ...r, winnerId });
+          didMutate = true;
+          break; // re-read fresh state
+        } catch { /* slot not ready — abort */ }
       }
-      try { t.setMatchResult(m.id, { ...r, winnerId }); } catch {}
-      i++;
+      if (!didMutate) break;
     }
-    if (i !== t.currentIndex) t.setCurrentIndex(i);
-  }, [t.mode, t.selectedTeam, t.currentIndex, t.chronologicalMatches]);
+    if (stoppedAt) {
+      const idx = CHRONOLOGICAL_IDS.indexOf(stoppedAt);
+      if (idx >= 0 && idx !== t.currentIndex) t.setCurrentIndex(idx);
+    }
+  }, [t.mode, t.currentIndex, t.setMatchResult, t.setCurrentIndex, requiresUserInput]);
+
+  useEffect(() => { advance(); }, [advance, t.state]);
+
+
 
   // Watch for champion crowned
   useEffect(() => {
@@ -152,9 +169,10 @@ export function SimulatorPage() {
   }
 
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="min-h-screen text-foreground" style={{ paddingTop: "var(--ticker-h, 36px)" }}>
+      <LiveScoreBar />
       {/* Top navbar */}
-      <header className="border-b border-border/60 backdrop-blur-xl sticky top-0 z-40 bg-background/85">
+      <header className="border-b border-border/60 backdrop-blur-xl sticky z-40 bg-background/85" style={{ top: "var(--ticker-h, 36px)" }}>
         <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--accent) 0%, var(--accent) 33%, var(--foreground) 33%, var(--foreground) 66%, var(--pitch) 66%, var(--pitch) 100%)" }} />
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 group">
@@ -217,27 +235,14 @@ export function SimulatorPage() {
 
       <AnimatePresence>
         {showChampion && t.champion && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex items-center justify-center p-6"
-            onClick={() => setShowChampion(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.85, y: 20 }} animate={{ scale: 1, y: 0 }}
-              className="text-center max-w-lg"
-            >
-              <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-accent mb-3">FIFA World Cup 2026 Champion</p>
-              <div className="text-8xl mb-4">🏆</div>
-              <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight mb-2">{t.champion}</h1>
-              <p className="text-muted-foreground mb-6">{t.state.bracket["L_F_M01"] && `defeated ${t.state.bracket["L_F_M01"]} in the Final`}</p>
-              <div className="flex gap-3 justify-center">
-                <button onClick={() => setShowChampion(false)} className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest bg-foreground text-background rounded-md">View bracket</button>
-                <button onClick={handleReset} className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest border border-border rounded-md hover:border-foreground">Start over</button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <ChampionReveal
+            champion={t.champion}
+            isUserTeam={t.mode === "journey" && t.selectedTeam === t.champion}
+            onDismiss={() => setShowChampion(false)}
+          />
         )}
       </AnimatePresence>
+
     </div>
   );
 }
