@@ -1,12 +1,13 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTournament, type SimMode } from "@/store/useTournament";
+import { useTournament, engine } from "@/store/useTournament";
 import { ModeSelect } from "@/components/simulator/ModeSelect";
 import { TeamPicker } from "@/components/simulator/TeamPicker";
 import { MatchSimulatorCard } from "@/components/simulator/MatchSimulatorCard";
 import { KnockoutView } from "@/components/simulator/KnockoutView";
 import { StandingsDrawer } from "@/components/simulator/StandingsDrawer";
+import { ChampionReveal } from "@/components/simulator/ChampionReveal";
 import { autoSimulate } from "@/utils/autoSimulate";
 import { CHRONOLOGICAL_IDS } from "@/data/wc2026Fixtures";
 import fifaLogo from "@/assets/fifa-wc-logo.png";

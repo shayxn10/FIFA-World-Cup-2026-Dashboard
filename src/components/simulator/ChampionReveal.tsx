@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { TEAM_CODES } from "@/utils/teamCodes";
-import trophyImg from "/assets/trophy.png?url";
+const trophyImg = "/assets/trophy.png";
 
 interface Props {
   champion: string;
