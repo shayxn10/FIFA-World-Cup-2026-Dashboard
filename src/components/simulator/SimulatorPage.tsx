@@ -20,38 +20,62 @@ export function SimulatorPage() {
   // Mode selection flow
   const [pickingTeam, setPickingTeam] = useState(false);
 
-  // Find the next match needing user input
-  const needsInput = (idx: number): boolean => {
-    if (idx >= t.chronologicalMatches.length) return false;
-    const m = t.chronologicalMatches[idx];
-    if (!m || m.isComplete) return false;
-    if (!m.isReady) return false; // skip un-ready (TBD) matches
-    if (t.mode === "full") return true;
-    return m.team1 === t.selectedTeam || m.team2 === t.selectedTeam;
-  };
+  // Decide if a (fresh-engine) match needs user input
+  const requiresUserInput = useCallback(
+    (m: { team1: string; team2: string }) => {
+      if (t.mode === "full") return true;
+      return m.team1 === t.selectedTeam || m.team2 === t.selectedTeam;
+    },
+    [t.mode, t.selectedTeam],
+  );
 
-  // Auto-advance: skip completed / unready / auto-sim matches until user input needed
-  useEffect(() => {
+  // Auto-advance: always read fresh engine state. Hard-stop on isReady=false.
+  const advance = useCallback(() => {
     if (!t.mode) return;
-    let i = t.currentIndex;
-    let safety = 200;
-    while (i < t.chronologicalMatches.length && safety-- > 0) {
-      const m = t.chronologicalMatches[i];
-      if (!m) { i++; continue; }
-      if (m.isComplete) { i++; continue; }
-      if (!m.isReady) { i++; continue; } // bracket slot not resolved yet
-      if (needsInput(i)) break;
-      // Auto-simulate this match silently
-      const r = autoSimulate();
-      let winnerId: string | undefined;
-      if (m.stage !== "group" && r.goals1 === r.goals2) {
-        winnerId = Math.random() < 0.5 ? m.team1 : m.team2;
+    let safety = 250;
+    let stoppedAt: string | null = null;
+    while (safety-- > 0) {
+      const fresh = engine.getState();
+      const ordered = CHRONOLOGICAL_IDS.map(id => fresh.resolvedMatches[id]).filter(Boolean);
+      let didMutate = false;
+      for (const m of ordered) {
+        if (!m) continue;
+        if (m.isComplete) continue;
+        // NOT ready = upstream slot still null. STOP entirely.
+        if (!m.isReady) { stoppedAt = m.id; break; }
+        if (requiresUserInput(m)) { stoppedAt = m.id; break; }
+        // Auto-simulate this match. Engine mutated → re-read on next outer iter.
+        const r = autoSimulate();
+        let winnerId: string | undefined;
+        if (m.stage !== "group" && r.goals1 === r.goals2) {
+          winnerId = Math.random() < 0.5 ? m.team1 : m.team2;
+        }
+        try {
+          engine.setMatchResult(m.id, { ...r, winnerId });
+          didMutate = true;
+          break; // re-evaluate fresh state from the top
+        } catch { /* slot not ready — abort this match */ }
       }
-      try { t.setMatchResult(m.id, { ...r, winnerId }); } catch {}
-      i++;
+      if (!didMutate) break;
     }
-    if (i !== t.currentIndex) t.setCurrentIndex(i);
-  }, [t.mode, t.selectedTeam, t.currentIndex, t.chronologicalMatches]);
+    // Sync React with whatever engine now holds.
+    const finalState = engine.getState();
+    try { localStorage.setItem("wc2026_engine_results", JSON.stringify(finalState.results)); } catch {}
+    // Trigger re-render via store update
+    t.setMatchResult; // no-op reference
+    if (stoppedAt) {
+      const idx = CHRONOLOGICAL_IDS.indexOf(stoppedAt);
+      if (idx >= 0 && idx !== t.currentIndex) t.setCurrentIndex(idx);
+    }
+    // Force store to publish fresh state to React:
+    // call any setter that triggers sync — easiest: setMatchResult on a no-op
+    // is unsafe; instead read via t.state next tick. The setCurrentIndex above
+    // already re-renders; the store's chronologicalMatches selector reads
+    // engine state on next render.
+  }, [t.mode, t.currentIndex, requiresUserInput, t.setCurrentIndex]);
+
+  useEffect(() => { advance(); }, [advance, t.state]);
+
 
   // Watch for champion crowned
   useEffect(() => {
