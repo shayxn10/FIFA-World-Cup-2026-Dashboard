@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TeamFlag } from "./TeamFlag";
 import { MATCH_META } from "@/data/wc2026Fixtures";
 import type { ResolvedMatch } from "@/engine/tournamentEngine";
+import { engine } from "@/store/useTournament";
+import { resolveTeamName } from "@/utils/resolveTeamName";
 
 interface Props {
   match: ResolvedMatch;
@@ -16,6 +18,9 @@ interface Props {
 export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, totalIndex, totalCount }: Props) {
   const meta = MATCH_META[match.id];
   const isKO = match.stage !== "group";
+  const bracket = engine.getState().bracket;
+  const team1 = resolveTeamName(match.team1, bracket);
+  const team2 = resolveTeamName(match.team2, bracket);
   const [g1, setG1] = useState(match.result?.goals1 ?? 0);
   const [g2, setG2] = useState(match.result?.goals2 ?? 0);
   const [winner, setWinner] = useState<string | undefined>(match.result?.winnerId);
@@ -67,9 +72,9 @@ export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, total
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
               {/* Team 1 */}
               <div className="flex flex-col items-center gap-3">
-                <TeamFlag name={match.team1} size={64} />
+                <TeamFlag name={team1} size={64} />
                 <p className="text-sm sm:text-base font-bold uppercase tracking-tight text-center leading-tight">
-                  {match.team1}
+                  {team1}
                 </p>
                 <ScoreStepper value={g1} onChange={d => step(1, d)} />
               </div>
@@ -78,9 +83,9 @@ export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, total
 
               {/* Team 2 */}
               <div className="flex flex-col items-center gap-3">
-                <TeamFlag name={match.team2} size={64} />
+                <TeamFlag name={team2} size={64} />
                 <p className="text-sm sm:text-base font-bold uppercase tracking-tight text-center leading-tight">
-                  {match.team2}
+                  {team2}
                 </p>
                 <ScoreStepper value={g2} onChange={d => step(2, d)} />
               </div>
@@ -97,7 +102,7 @@ export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, total
                   Penalty shootout — pick the winner
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {[match.team1, match.team2].map(t => (
+                  {[team1, team2].map(t => (
                     <button
                       key={t}
                       onClick={() => setWinner(t)}

@@ -9,7 +9,8 @@ import { KnockoutView } from "@/components/simulator/KnockoutView";
 import { StandingsDrawer } from "@/components/simulator/StandingsDrawer";
 import { ChampionReveal } from "@/components/simulator/ChampionReveal";
 import { LiveScoreBar } from "@/components/LiveScoreBar/LiveScoreBar";
-import { autoSimulate } from "@/utils/autoSimulate";
+import { weightedAutoSimulate } from "@/utils/teamWeights";
+import { resolveTeamName } from "@/utils/resolveTeamName";
 import { CHRONOLOGICAL_IDS } from "@/data/wc2026Fixtures";
 import fifaLogo from "@/assets/fifa-wc-logo.png";
 
@@ -44,12 +45,16 @@ export function SimulatorPage() {
       for (const m of ordered) {
         if (m.isComplete) continue;
         if (!m.isReady) { stoppedAt = m.id; break; }
+        // Resolve teams; if anything still TBD, hard stop.
+        const t1 = resolveTeamName(m.team1, fresh.bracket);
+        const t2 = resolveTeamName(m.team2, fresh.bracket);
+        if (t1 === "TBD" || t2 === "TBD") { stoppedAt = m.id; break; }
         if (requiresUserInput(m)) { stoppedAt = m.id; break; }
-        // Auto-simulate this ready match.
-        const r = autoSimulate();
+        // Auto-simulate this ready match using weighted strengths.
+        const r = weightedAutoSimulate(t1, t2);
         let winnerId: string | undefined;
         if (m.stage !== "group" && r.goals1 === r.goals2) {
-          winnerId = Math.random() < 0.5 ? m.team1 : m.team2;
+          winnerId = Math.random() < 0.5 ? t1 : t2;
         }
         try {
           t.setMatchResult(m.id, { ...r, winnerId });
