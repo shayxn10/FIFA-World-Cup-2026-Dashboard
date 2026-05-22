@@ -9,7 +9,8 @@ import { KnockoutView } from "@/components/simulator/KnockoutView";
 import { StandingsDrawer } from "@/components/simulator/StandingsDrawer";
 import { ChampionReveal } from "@/components/simulator/ChampionReveal";
 import { LiveScoreBar } from "@/components/LiveScoreBar/LiveScoreBar";
-import { autoSimulate } from "@/utils/autoSimulate";
+import { weightedAutoSimulate } from "@/utils/teamWeights";
+import { resolveTeamName } from "@/utils/resolveTeamName";
 import { CHRONOLOGICAL_IDS } from "@/data/wc2026Fixtures";
 import fifaLogo from "@/assets/fifa-wc-logo.png";
 
