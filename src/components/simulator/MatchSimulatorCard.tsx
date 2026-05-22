@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TeamFlag } from "./TeamFlag";
 import { MATCH_META } from "@/data/wc2026Fixtures";
 import type { ResolvedMatch } from "@/engine/tournamentEngine";
+import { engine } from "@/store/useTournament";
+import { resolveTeamName } from "@/utils/resolveTeamName";
 
 interface Props {
   match: ResolvedMatch;
