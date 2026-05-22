@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTournament, engine } from "@/store/useTournament";
+import { useTournament, engine, applyPatches } from "@/store/useTournament";
 import { ModeSelect } from "@/components/simulator/ModeSelect";
 import { TeamPicker } from "@/components/simulator/TeamPicker";
 import { MatchSimulatorCard } from "@/components/simulator/MatchSimulatorCard";
