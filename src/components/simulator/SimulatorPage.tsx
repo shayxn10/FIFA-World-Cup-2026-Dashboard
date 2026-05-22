@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTournament, engine } from "@/store/useTournament";
+import { useTournament, engine, applyPatches } from "@/store/useTournament";
 import { ModeSelect } from "@/components/simulator/ModeSelect";
 import { TeamPicker } from "@/components/simulator/TeamPicker";
 import { MatchSimulatorCard } from "@/components/simulator/MatchSimulatorCard";
@@ -36,7 +36,7 @@ export function SimulatorPage() {
     let safety = 250;
     let stoppedAt: string | null = null;
     while (safety-- > 0) {
-      const fresh = engine.getState();
+      const fresh = applyPatches(engine.getState());
       const ordered = CHRONOLOGICAL_IDS
         .map(id => fresh.resolvedMatches[id])
         .filter((m): m is NonNullable<typeof m> => Boolean(m));

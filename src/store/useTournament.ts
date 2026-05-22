@@ -5,10 +5,85 @@ import {
   type TournamentState,
   type MatchResult,
   type ResolvedMatch,
+  type GroupTable,
+  THIRD_PLACE_SLOT_GROUPS,
 } from "@/engine/tournamentEngine";
 import { ALL_FIXTURES, CHRONOLOGICAL_IDS } from "@/data/wc2026Fixtures";
 
 export type SimMode = "full" | "journey";
+
+// ── T3 slot safety patch ──────────────────────────────────────
+// Some bracket configurations leave a T3_ slot null when no top-8
+// third-place team is in its eligible group set. We patch by ranking
+// ALL 12 third-place teams via FIFA tiebreakers and assigning the best
+// remaining unassigned team into each null T3 slot.
+function patchMissingT3Slots(
+  bracket: Record<string, string | null>,
+  groups: Record<string, GroupTable>,
+): Record<string, string | null> {
+  const patched = { ...bracket };
+  const nullT3Slots = Object.keys(THIRD_PLACE_SLOT_GROUPS).filter(
+    k => !patched[k],
+  );
+  if (nullT3Slots.length === 0) return patched;
+
+  const allThirds = Object.entries(groups)
+    .map(([g, table]) => {
+      const third = table[2];
+      if (!third) return null;
+      return {
+        team: third.team,
+        group: g,
+        points: third.points,
+        goalDifference: third.goalDifference,
+        goalsFor: third.goalsFor,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  allThirds.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+
+  const assigned = new Set(
+    Object.entries(patched)
+      .filter(([k, v]) => k.startsWith("T3_") && v)
+      .map(([, v]) => v as string),
+  );
+  const unassigned = allThirds.filter(t => !assigned.has(t.team));
+
+  for (const slot of nullT3Slots) {
+    const pick = unassigned.shift();
+    if (pick) {
+      patched[slot] = pick.team;
+      console.log(`[patchMissingT3Slots] filled ${slot} → ${pick.team} (Group ${pick.group})`);
+    } else {
+      console.warn(`[patchMissingT3Slots] no candidate for ${slot}`);
+    }
+  }
+  return patched;
+}
+
+function reresolveMatches(
+  resolved: Record<string, ResolvedMatch>,
+  bracket: Record<string, string | null>,
+): Record<string, ResolvedMatch> {
+  const out: Record<string, ResolvedMatch> = {};
+  for (const [id, m] of Object.entries(resolved)) {
+    const t1raw = m.team1;
+    const t2raw = m.team2;
+    const t1 = /^(W_|R_|T3_|L_)/.test(t1raw) ? bracket[t1raw] ?? t1raw : t1raw;
+    const t2 = /^(W_|R_|T3_|L_)/.test(t2raw) ? bracket[t2raw] ?? t2raw : t2raw;
+    const isReady =
+      !!t1 && !!t2 &&
+      !/^(W_|R_|T3_|L_)/.test(t1) &&
+      !/^(W_|R_|T3_|L_)/.test(t2);
+    out[id] = { ...m, team1: t1, team2: t2, isReady };
+  }
+  return out;
+}
 
 const KEYS = {
   results: "wc2026_engine_results",
@@ -42,14 +117,37 @@ function readLS<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
+export function applyPatches(raw: TournamentState): TournamentState {
+  const next = raw as TournamentState;
+  const groupMatches = Object.values(next.resolvedMatches).filter(m => m.stage === "group");
+  const groupTotal = groupMatches.length;
+  const groupDone = groupMatches.filter(m => m.isComplete).length;
+  if (groupTotal > 0 && groupDone === groupTotal) {
+    // Diagnostic
+    if (typeof window !== "undefined" && !(window as any).__wc26_logged) {
+      (window as any).__wc26_logged = true;
+      console.log("=== BRACKET SLOTS AFTER GROUP STAGE ===");
+      Object.entries(next.bracket).forEach(([k, v]) => {
+        console.log(`${k}: ${v ?? "NULL ← PROBLEM"}`);
+      });
+    }
+    const patchedBracket = patchMissingT3Slots(next.bracket, next.groups);
+    next.bracket = patchedBracket;
+    next.resolvedMatches = reresolveMatches(next.resolvedMatches, patchedBracket);
+  } else if (typeof window !== "undefined") {
+    (window as any).__wc26_logged = false;
+  }
+  return next;
+}
+
 export function useTournament() {
-  const [state, setState] = useState<TournamentState>(engine.getState());
+  const [state, setState] = useState<TournamentState>(() => applyPatches(engine.getState()));
   const [mode, setModeState] = useState<SimMode | null>(() => readLS<SimMode | null>(KEYS.mode, null));
   const [selectedTeam, setSelectedTeamState] = useState<string | null>(() => readLS<string | null>(KEYS.team, null));
   const [currentIndex, setCurrentIndexState] = useState<number>(() => readLS<number>(KEYS.index, 0));
 
   const sync = useCallback(() => {
-    const next = engine.getState();
+    const next = applyPatches(engine.getState());
     setState(next);
     try { localStorage.setItem(KEYS.results, JSON.stringify(next.results)); } catch {}
   }, []);
