@@ -117,7 +117,7 @@ function readLS<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
-function applyPatches(raw: TournamentState): TournamentState {
+export function applyPatches(raw: TournamentState): TournamentState {
   const next = raw as TournamentState;
   const groupMatches = Object.values(next.resolvedMatches).filter(m => m.stage === "group");
   const groupTotal = groupMatches.length;
