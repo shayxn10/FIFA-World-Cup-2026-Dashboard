@@ -72,9 +72,9 @@ export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, total
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
               {/* Team 1 */}
               <div className="flex flex-col items-center gap-3">
-                <TeamFlag name={match.team1} size={64} />
+                <TeamFlag name={team1} size={64} />
                 <p className="text-sm sm:text-base font-bold uppercase tracking-tight text-center leading-tight">
-                  {match.team1}
+                  {team1}
                 </p>
                 <ScoreStepper value={g1} onChange={d => step(1, d)} />
               </div>
@@ -83,9 +83,9 @@ export function MatchSimulatorCard({ match, onSimulate, onPrev, canGoPrev, total
 
               {/* Team 2 */}
               <div className="flex flex-col items-center gap-3">
-                <TeamFlag name={match.team2} size={64} />
+                <TeamFlag name={team2} size={64} />
                 <p className="text-sm sm:text-base font-bold uppercase tracking-tight text-center leading-tight">
-                  {match.team2}
+                  {team2}
                 </p>
                 <ScoreStepper value={g2} onChange={d => step(2, d)} />
               </div>
