@@ -55,7 +55,6 @@ export const BRACKET_TEMPLATE: Record<string, [string, string]> = {
   R32_M10: ["W_K", "R_L"],
   R32_M11: ["W_J", "T3_ABIJ"],
   R32_M12: ["W_L", "R_K"],
-  R32_M13: ["T3_GHIJ", "T3_CDEF"], // patched: was ["W_M","T3_CDEF"]
   R32_M14: ["R_A", "R_B"],
   R32_M15: ["R_E", "R_F"],
   R32_M16: ["R_I", "R_J"],
@@ -65,7 +64,7 @@ export const BRACKET_TEMPLATE: Record<string, [string, string]> = {
   R16_M04: ["W_R32_M07", "W_R32_M08"],
   R16_M05: ["W_R32_M09", "W_R32_M10"],
   R16_M06: ["W_R32_M11", "W_R32_M12"],
-  R16_M07: ["W_R32_M13", "W_R32_M14"],
+  R16_M07: ["W_R32_M14", "W_R32_M15"],
   R16_M08: ["W_R32_M15", "W_R32_M16"],
   QF_M01: ["W_R16_M01", "W_R16_M02"],
   QF_M02: ["W_R16_M03", "W_R16_M04"],
