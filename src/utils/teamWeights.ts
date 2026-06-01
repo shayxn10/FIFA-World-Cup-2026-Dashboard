@@ -1,39 +1,41 @@
 // ─────────────────────────────────────────────────────
-// teamWeights.ts
-// Weighted auto-simulation based on FIFA team strength.
-// Used to auto-sim non-user matches with realistic outcomes.
+// teamWeights.ts — wider tier gaps + more decisive formula
 // ─────────────────────────────────────────────────────
 
 export const TEAM_TIER: Record<string, number> = {
-  // TIER 1 — Elite world class (88-96)
-  "Argentina": 96, "France": 95, "Brazil": 94, "Spain": 93,
-  "England": 91, "Portugal": 90, "Germany": 89, "Netherlands": 88,
+  // TIER 1 — Elite (90-100)
+  "Argentina": 100, "France": 98, "Brazil": 97, "Spain": 95,
+  "England": 93, "Portugal": 91, "Germany": 90, "Netherlands": 89,
 
-  // TIER 2 — Strong contenders (78-87)
-  "Belgium": 87, "Uruguay": 85, "Colombia": 83, "Morocco": 82,
-  "Mexico": 80, "Croatia": 80, "USA": 79, "Japan": 78,
+  // TIER 2 — Strong (75-87)
+  "Belgium": 87, "Uruguay": 84, "Colombia": 82, "Morocco": 81,
+  "Croatia": 80, "Mexico": 78, "USA": 76, "Japan": 75,
 
-  // TIER 3 — Competitive (68-77)
-  "Senegal": 77, "Switzerland": 76, "Denmark": 75, "Sweden": 74,
-  "Ecuador": 74, "Australia": 73, "Korea Republic": 73, "South Korea": 73,
-  "Türkiye": 73, "IR Iran": 72, "Iran": 72, "Côte d'Ivoire": 72,
-  "Ivory Coast": 72, "Poland": 72, "Norway": 71, "Canada": 70,
-  "Serbia": 69, "Austria": 69, "Ghana": 68, "Czechia": 68, "Czech Republic": 68,
+  // TIER 3 — Competitive (58-72)
+  "Senegal": 72, "Switzerland": 71, "Denmark": 70, "Sweden": 69,
+  "Ecuador": 68, "Türkiye": 68, "Australia": 67,
+  "Korea Republic": 67, "South Korea": 67,
+  "IR Iran": 66, "Iran": 66,
+  "Côte d'Ivoire": 66, "Ivory Coast": 66,
+  "Norway": 65, "Poland": 65, "Canada": 64,
+  "Austria": 63, "Serbia": 63, "Ghana": 62,
+  "Czechia": 61, "Czech Republic": 61,
+  "Scotland": 60, "Algeria": 59, "Tunisia": 58,
+  "Cameroon": 60,
 
-  // TIER 4 — Mid-level (50-67)
-  "Scotland": 66, "Tunisia": 65, "Algeria": 65, "Slovakia": 65,
-  "Egypt": 64, "Paraguay": 62, "Bosnia and Herzegovina": 62,
-  "South Africa": 58, "Uzbekistan": 57, "Congo DR": 56,
-  "Saudi Arabia": 56, "Iraq": 54, "Cabo Verde": 54, "Panama": 52,
-  "Cameroon": 63,
+  // TIER 4 — Mid-lower (42-55)
+  "Egypt": 55, "Paraguay": 54, "Bosnia and Herzegovina": 53,
+  "South Africa": 50, "Saudi Arabia": 50, "Uzbekistan": 48,
+  "Congo DR": 47, "Cabo Verde": 46, "Iraq": 45,
+  "Panama": 44, "Slovakia": 43,
 
-  // TIER 5 — Underdogs (35-49)
-  "Qatar": 48, "Jordan": 46, "Bolivia": 45, "Haiti": 44,
-  "Curaçao": 40, "New Zealand": 38,
+  // TIER 5 — Underdogs (25-38)
+  "Qatar": 38, "Jordan": 35, "Bolivia": 33,
+  "Haiti": 30, "Curaçao": 27, "New Zealand": 25,
 };
 
 export function getTeamStrength(team: string): number {
-  return TEAM_TIER[team] ?? 58;
+  return TEAM_TIER[team] ?? 55;
 }
 
 export function weightedAutoSimulate(
@@ -44,17 +46,16 @@ export function weightedAutoSimulate(
   const r2 = getTeamStrength(team2);
   const diff = r1 - r2;
 
-  // Elo-style win probability
-  const team1WinProb = 1 / (1 + Math.pow(10, -diff / 20));
-  const drawProb = Math.max(0.06, 0.22 - Math.abs(diff) * 0.003);
+  // Divisor 12 = decisive. Stronger teams win much more consistently.
+  const team1WinProb = 1 / (1 + Math.pow(10, -diff / 12));
+  const drawProb = Math.max(0.04, 0.20 - Math.abs(diff) * 0.004);
 
   const rand = Math.random();
-  const winBand = team1WinProb * (1 - drawProb);
-  const drawBand = winBand + drawProb;
+  const team1WinChance = team1WinProb * (1 - drawProb);
 
   let winner: "team1" | "team2" | "draw";
-  if (rand < winBand) winner = "team1";
-  else if (rand < drawBand) winner = "draw";
+  if (rand < team1WinChance) winner = "team1";
+  else if (rand < team1WinChance + drawProb) winner = "draw";
   else winner = "team2";
 
   const winScores: Array<[number, number]> = [

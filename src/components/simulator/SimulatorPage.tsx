@@ -22,10 +22,12 @@ export function SimulatorPage() {
   // Mode selection flow
   const [pickingTeam, setPickingTeam] = useState(false);
 
-  // Decide if a (fresh-engine) match needs user input
+  // Decide if a (fresh-engine) match needs user input.
+  // Full mode: every match. Journey mode: user's group games AND every KO match.
   const requiresUserInput = useCallback(
-    (m: { team1: string; team2: string }) => {
+    (m: { team1: string; team2: string; stage: string }) => {
       if (t.mode === "full") return true;
+      if (m.stage !== "group") return true; // KO: user picks all winners
       return m.team1 === t.selectedTeam || m.team2 === t.selectedTeam;
     },
     [t.mode, t.selectedTeam],
@@ -139,14 +141,16 @@ export function SimulatorPage() {
         state={t.state}
         highlightTeam={t.selectedTeam}
         onPickWinner={(id, winner) => {
-          // Default 1-1 winner-on-pens unless current match in feed
-          if (currentMatch?.id === id) return;
           t.setMatchResult(id, { goals1: 1, goals2: 1, winnerId: winner });
         }}
       />
     );
-    // But if there's a current KO match needing input, override with match card
-    if (currentMatch && currentMatch.stage !== "group" && currentMatch.isReady && !currentMatch.isComplete) {
+    // Full-tournament mode keeps the sequential match card for KO matches.
+    if (
+      t.mode === "full" &&
+      currentMatch && currentMatch.stage !== "group" &&
+      currentMatch.isReady && !currentMatch.isComplete
+    ) {
       body = (
         <MatchSimulatorCard
           match={currentMatch}
