@@ -248,10 +248,26 @@ export function SimulatorPage() {
           const fr = t.state.results["F_M01"];
           const runnerUp = fm ? (fm.team1 === t.champion ? fm.team2 : fm.team1) : null;
           const score = fr ? `${Math.max(fr.goals1, fr.goals2)}-${Math.min(fr.goals1, fr.goals2)}` : "";
+          const tp = t.state.resolvedMatches["TP_M01"];
+          const tpr = t.state.results["TP_M01"];
+          let third: string | null = t.state.bracket["W_TP_M01"] ?? null;
+          let fourth: string | null = null;
+          if (tp && tpr) {
+            const winner = tpr.goals1 > tpr.goals2 ? tp.team1
+                          : tpr.goals2 > tpr.goals1 ? tp.team2
+                          : tpr.winnerId ?? tp.team1;
+            third = winner;
+            fourth = winner === tp.team1 ? tp.team2 : tp.team1;
+          } else if (tp) {
+            third = tp.team1; fourth = tp.team2;
+          }
+          const isSlot = (s: string | null) => !s || /^(W_|L_|R_|T3_)/.test(s);
           return (
             <ChampionReveal
               champion={t.champion}
-              runnerUp={runnerUp}
+              runnerUp={isSlot(runnerUp) ? null : runnerUp}
+              third={isSlot(third) ? null : third}
+              fourth={isSlot(fourth) ? null : fourth}
               finalScore={score}
               isUserTeam={t.mode === "journey" && t.selectedTeam === t.champion}
               onDismiss={() => setShowChampion(false)}
