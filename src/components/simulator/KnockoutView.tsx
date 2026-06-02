@@ -51,6 +51,19 @@ const GROUP_FLAGS: Record<string, string[]> = {
 export function KnockoutView({ state, onPickWinner, highlightTeam }: Props) {
   const matches = state.resolvedMatches;
   const champion = state.bracket["W_F_M01"];
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <MobileBracket
+        state={state}
+        matches={matches}
+        onPickWinner={onPickWinner}
+        highlightTeam={highlightTeam}
+        champion={champion}
+      />
+    );
+  }
 
   return (
     <div className="w-full overflow-x-auto bg-black">
@@ -63,16 +76,11 @@ export function KnockoutView({ state, onPickWinner, highlightTeam }: Props) {
         </h2>
 
         <div className="flex items-stretch justify-center gap-3">
-          {/* LEFT groups */}
           <GroupsColumn groups={["A","B","C","D","E","F"]} />
-
-          {/* LEFT bracket */}
-          <RoundColumn label="R32" ids={R32_L}      matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
-          <RoundColumn label="R16" ids={R16_L}      matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
-          <RoundColumn label="QF"  ids={QF_L}       matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
-          <RoundColumn label="SF"  ids={SF_L}       matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
-
-          {/* CENTER */}
+          <RoundColumn label="R32" ids={R32_L} matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
+          <RoundColumn label="R16" ids={R16_L} matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
+          <RoundColumn label="QF"  ids={QF_L}  matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
+          <RoundColumn label="SF"  ids={SF_L}  matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="left" />
           <CenterColumn
             finalMatch={matches["F_M01"]}
             bronzeMatch={matches["TP_M01"]}
@@ -80,17 +88,137 @@ export function KnockoutView({ state, onPickWinner, highlightTeam }: Props) {
             highlightTeam={highlightTeam}
             bracket={state.bracket}
           />
-
-          {/* RIGHT bracket */}
-          <RoundColumn label="SF"  ids={SF_R}       matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
-          <RoundColumn label="QF"  ids={QF_R}       matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
-          <RoundColumn label="R16" ids={R16_R}      matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
-          <RoundColumn label="R32" ids={R32_R}      matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
-
-          {/* RIGHT groups */}
+          <RoundColumn label="SF"  ids={SF_R}  matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
+          <RoundColumn label="QF"  ids={QF_R}  matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
+          <RoundColumn label="R16" ids={R16_R} matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
+          <RoundColumn label="R32" ids={R32_R} matches={matches} onPick={onPickWinner} highlightTeam={highlightTeam} side="right" />
           <GroupsColumn groups={["G","H","I","J","K","L"]} />
         </div>
       </div>
+    </div>
+  );
+}
+
+// ───────────────────────── Mobile bracket ─────────────────────────
+type Round = "R32" | "R16" | "QF" | "SF" | "F";
+const ROUND_IDS: Record<Round, string[]> = {
+  R32: R32_ALL,
+  R16: R16_ALL,
+  QF: QF_ALL,
+  SF: SF_ALL,
+  F: ["F_M01", "TP_M01"],
+};
+const ROUND_LABEL: Record<Round, string> = {
+  R32: "Round of 32",
+  R16: "Round of 16",
+  QF: "Quarter-finals",
+  SF: "Semi-finals",
+  F: "Final & 3rd Place",
+};
+
+function MobileBracket({
+  state, matches, onPickWinner, highlightTeam, champion,
+}: {
+  state: TournamentState;
+  matches: Record<string, ResolvedMatch>;
+  onPickWinner: Props["onPickWinner"];
+  highlightTeam?: string | null;
+  champion: string | null | undefined;
+}) {
+  const initialRound: Round = (() => {
+    const rounds: Round[] = ["R32","R16","QF","SF","F"];
+    for (const r of rounds) {
+      const some = ROUND_IDS[r].some(id => {
+        const m = matches[id];
+        return m && m.isReady && !m.isComplete;
+      });
+      if (some) return r;
+    }
+    return "R32";
+  })();
+  const [round, setRound] = useState<Round>(initialRound);
+  const ids = ROUND_IDS[round];
+
+  return (
+    <div className="w-full bg-black min-h-screen px-3 py-4">
+      <h2
+        className="text-center text-white mb-3"
+        style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 24, letterSpacing: "0.18em" }}
+      >
+        {champion ? `🏆 ${champion}` : "BRACKET"}
+      </h2>
+
+      <div className="flex gap-1 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+        {(Object.keys(ROUND_IDS) as Round[]).map(r => {
+          const active = r === round;
+          return (
+            <button
+              key={r}
+              onClick={() => setRound(r)}
+              className="flex-shrink-0 px-3 py-2 rounded-md transition-colors"
+              style={{
+                background: active ? "#f5a623" : "#111827",
+                color: active ? "#000" : "#8899aa",
+                border: `1px solid ${active ? "#f5a623" : "#1f2d45"}`,
+                fontFamily: "Bebas Neue, sans-serif",
+                letterSpacing: "0.15em",
+                fontSize: 12,
+                minWidth: 56,
+              }}
+            >
+              {r}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        className="text-center mb-3"
+        style={{
+          fontFamily: "Bebas Neue, sans-serif",
+          fontSize: 14, color: "#8899aa", letterSpacing: "0.25em",
+        }}
+      >
+        {ROUND_LABEL[round]}
+      </div>
+
+      {round === "F" && champion && (
+        <div className="flex flex-col items-center mb-4">
+          <img src={trophyImg} alt="" style={{ height: 96, filter: "drop-shadow(0 0 16px rgba(245,166,35,0.5))" }} />
+          <div style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 22, color: "#f5a623", marginTop: 4, letterSpacing: "0.15em" }}>
+            {champion}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 pb-8">
+        {ids.map(id => {
+          const m = matches[id];
+          if (!m) return null;
+          const label = id === "F_M01" ? "FINAL" : id === "TP_M01" ? "3RD PLACE" : undefined;
+          return (
+            <div key={id}>
+              {label && (
+                <div
+                  className="mb-1 text-center"
+                  style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 11, color: "#f5a623", letterSpacing: "0.25em" }}
+                >
+                  {label}
+                </div>
+              )}
+              <MatchCard
+                match={m}
+                onPick={onPickWinner}
+                highlightTeam={highlightTeam}
+                side="left"
+                fullWidth
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <span style={{ display: "none" }}>{Object.keys(state.bracket).length}</span>
     </div>
   );
 }
