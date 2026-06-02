@@ -355,12 +355,13 @@ function CenterColumn({
 }
 
 function MatchCard({
-  match, onPick, highlightTeam,
+  match, onPick, highlightTeam, fullWidth,
 }: {
   match: ResolvedMatch;
   onPick: Props["onPickWinner"];
   highlightTeam?: string | null;
   side: "left" | "right";
+  fullWidth?: boolean;
 }) {
   const meta = MATCH_META[match.id];
   const ready = match.isReady && !match.isComplete;
@@ -387,15 +388,15 @@ function MatchCard({
   }
 
   return (
-    <div className="relative">
+    <div className="relative" style={fullWidth ? { width: "100%" } : undefined}>
       <button
         type="button"
         disabled={!ready}
         onClick={() => ready && setOpen(o => !o)}
-        className="w-full text-left transition-colors"
+        className="text-left transition-colors"
         style={{
-          width: 170,
-          height: 56,
+          width: fullWidth ? "100%" : 170,
+          height: fullWidth ? 64 : 56,
           background: "#111827",
           borderRadius: 4,
           border,
