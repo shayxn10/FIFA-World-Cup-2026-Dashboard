@@ -4,6 +4,7 @@ import { TeamFlag } from "./TeamFlag";
 import { MATCH_META } from "@/data/wc2026Fixtures";
 import type { ResolvedMatch, TournamentState } from "@/engine/tournamentEngine";
 import { resolveTeamName } from "@/utils/resolveTeamName";
+import { useIsMobile } from "@/hooks/use-mobile";
 const trophyImg = "/assets/trophy.png";
 
 interface Props {
