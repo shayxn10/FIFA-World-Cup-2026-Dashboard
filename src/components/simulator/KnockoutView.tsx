@@ -437,7 +437,7 @@ function MatchCard({
                   className="truncate"
                   style={{
                     fontFamily: "DM Sans, sans-serif",
-                    fontSize: 11,
+                    fontSize: fullWidth ? 14 : 11,
                     color: isSlot ? "#445566" : isLoss ? "#445566" : "#ffffff",
                     fontWeight: isWin ? 700 : 500,
                     textDecoration: isLoss ? "line-through" : "none",
