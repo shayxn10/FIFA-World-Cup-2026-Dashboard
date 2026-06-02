@@ -427,7 +427,7 @@ function MatchCard({
               key={i}
               className="flex items-center justify-between gap-1 px-2"
               style={{
-                height: 28,
+                height: fullWidth ? 32 : 28,
                 borderTop: i === 1 ? "1px solid #0a0f1c" : "none",
               }}
             >
