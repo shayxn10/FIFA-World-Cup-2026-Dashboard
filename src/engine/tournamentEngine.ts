@@ -84,6 +84,8 @@ export const THIRD_PLACE_SLOT_GROUPS: Record<string, string[]> = {
   T3_ABCD: ["A", "B", "C", "D"],
   T3_EFGH: ["E", "F", "G", "H"],
   T3_ABIJ: ["A", "B", "I", "J"],
+  T3_CDGH: ["C", "D", "G", "H"],
+  T3_EFKL: ["E", "F", "K", "L"],
 };
 
 export function compareTeams(a: TeamRecord, b: TeamRecord, headToHead?: Record<string, TeamRecord>): number {
