@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import html2canvas from "html2canvas";
 import { TEAM_CODES } from "@/utils/teamCodes";
+import { recordWinner } from "@/hooks/useLeaderboard";
+import { SimulatorLeaderboard } from "@/components/simulator/SimulatorLeaderboard";
 const trophyImg = "/assets/trophy.png";
 
 export interface TopFour {
@@ -49,6 +51,8 @@ export function ChampionReveal({
   champion, runnerUp, third, fourth, finalScore, isUserTeam, onDismiss,
 }: Props) {
   const fired = useRef(false);
+  const recorded = useRef(false);
+  const [lbKey, setLbKey] = useState(0);
   const meta = metaOf(champion);
   const runnerMeta = metaOf(runnerUp);
   const thirdMeta = metaOf(third);
@@ -67,6 +71,14 @@ export function ChampionReveal({
     const t = setTimeout(fire, 300);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (recorded.current) return;
+    if (!champion) return;
+    recorded.current = true;
+    recordWinner(champion).then(() => setLbKey(k => k + 1));
+  }, []);
+
 
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
 
@@ -221,6 +233,29 @@ export function ChampionReveal({
           </button>
         </div>
       </motion.div>
+
+      {/* Leaderboard */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 3.8, duration: 0.4 }}
+        className="mt-10 w-full"
+        style={{ maxWidth: 480 }}
+      >
+        <p
+          className="text-center"
+          style={{
+            fontFamily: "Bebas Neue, var(--font-display)",
+            fontSize: 14,
+            color: "#8899aa",
+            letterSpacing: "0.2em",
+            marginBottom: 12,
+          }}
+        >
+          SEE HOW OTHERS SIMULATED
+        </p>
+        <SimulatorLeaderboard refreshKey={lbKey} />
+      </motion.div>
+
 
       <motion.button
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}

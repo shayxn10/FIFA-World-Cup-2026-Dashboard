@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import groupsImg from "@/assets/wc2026-groups.png";
+import { SimulatorLeaderboard } from "@/components/simulator/SimulatorLeaderboard";
 
 interface Props {
   onSelect: (mode: "full" | "journey") => void;
@@ -72,6 +73,22 @@ export function ModeSelect({ onSelect }: Props) {
               </span>
             </motion.button>
           ))}
+        </div>
+
+        <div className="mt-12">
+          <p
+            style={{
+              fontFamily: "Bebas Neue, var(--font-display)",
+              fontSize: 14,
+              color: "#8899aa",
+              letterSpacing: "0.2em",
+              marginBottom: 16,
+              textAlign: "center",
+            }}
+          >
+            WHAT IS EVERYONE PREDICTING?
+          </p>
+          <SimulatorLeaderboard />
         </div>
       </motion.div>
     </div>
