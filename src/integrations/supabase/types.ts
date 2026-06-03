@@ -14,13 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      simulator_winners: {
+        Row: {
+          team_name: string
+          updated_at: string
+          win_count: number
+        }
+        Insert: {
+          team_name: string
+          updated_at?: string
+          win_count?: number
+        }
+        Update: {
+          team_name?: string
+          updated_at?: string
+          win_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_winner: { Args: { p_team: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
