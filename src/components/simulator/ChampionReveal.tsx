@@ -72,6 +72,14 @@ export function ChampionReveal({
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    if (recorded.current) return;
+    if (!champion) return;
+    recorded.current = true;
+    recordWinner(champion).then(() => setLbKey(k => k + 1));
+  }, []);
+
+
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   function handleTweet() {
