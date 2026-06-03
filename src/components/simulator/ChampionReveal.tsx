@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import html2canvas from "html2canvas";
 import { TEAM_CODES } from "@/utils/teamCodes";
+import { recordWinner } from "@/hooks/useLeaderboard";
+import { SimulatorLeaderboard } from "@/components/simulator/SimulatorLeaderboard";
 const trophyImg = "/assets/trophy.png";
 
 export interface TopFour {
