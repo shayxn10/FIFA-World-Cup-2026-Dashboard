@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { recordWinnerFn } from "@/lib/leaderboard.functions";
 
 export interface LeaderboardRow {
   team_name: string;
@@ -8,7 +9,7 @@ export interface LeaderboardRow {
 export async function recordWinner(teamName: string): Promise<void> {
   if (!teamName) return;
   try {
-    await supabase.rpc("increment_winner", { p_team: teamName });
+    await recordWinnerFn({ data: { team: teamName } });
   } catch (err) {
     console.warn("[leaderboard] recordWinner failed", err);
   }
