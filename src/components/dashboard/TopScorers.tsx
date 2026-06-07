@@ -92,32 +92,32 @@ export function TopScorers() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.25, delay: i * 0.015 }}
-                    className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-md text-left transition-colors ${
-                      isActive ? "bg-foreground/5" : "hover:bg-foreground/[0.03]"
-                    }`}
+                    className="w-full flex items-center gap-3 px-2.5 py-2 rounded-md text-left transition-colors"
+                    style={
+                      isActive
+                        ? { background: "rgba(245,166,35,0.08)", borderLeft: "3px solid #f5a623", paddingLeft: 7 }
+                        : { borderLeft: "3px solid transparent", paddingLeft: 7 }
+                    }
                   >
                     <span className="stat-number text-[11px] text-muted-foreground w-6 tabular-nums">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <Flag code={s.code} size={20} />
                     <span className="text-[13px] font-semibold w-44 truncate">{s.name}</span>
-                    <div className="flex-1 h-5 bg-muted/30 rounded-sm overflow-hidden relative">
+                    <div className="flex-1 h-5 rounded-sm overflow-hidden relative" style={{ background: "#1e2d42" }}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         className="h-full rounded-sm"
-                        style={{
-                          background: isActive
-                            ? "var(--accent)"
-                            : "color-mix(in oklab, var(--foreground) 65%, transparent)",
-                        }}
+                        style={{ background: isActive ? "#f5a623" : "rgba(245,166,35,0.35)" }}
                       />
                     </div>
                     <span className="stat-number text-[13px] font-bold w-7 text-right tabular-nums">
                       {s.goals}
                     </span>
                   </motion.button>
+
                 );
               })}
             </AnimatePresence>
