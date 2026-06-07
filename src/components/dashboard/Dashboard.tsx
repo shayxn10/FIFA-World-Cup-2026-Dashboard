@@ -220,6 +220,11 @@ export function Dashboard() {
               </div>
             </div>
           </div>
+          <div
+            className="pointer-events-none absolute left-0 right-0 bottom-0"
+            style={{ height: 80, background: "linear-gradient(to bottom, transparent, var(--color-bg))" }}
+            aria-hidden
+          />
         </motion.section>
 
         {/* TOURNAMENT STATUS — three-phase block */}
@@ -470,24 +475,37 @@ export function Dashboard() {
         </section>
 
         {/* FOOTER */}
-        <footer className="border-t border-border/60 pt-8 pb-12 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
-          <div>FIFA WORLD CUP ANALYTICS · BUILT WITH REACT + RECHARTS</div>
-          <div className="flex gap-4">
-            <span>DATA: FIFA · STATSBOMB</span>
-            <span className="text-pitch">● LIVE</span>
+        <footer className="border-t border-border/60 pt-8 pb-12 relative">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
+            <div>FIFA WORLD CUP ANALYTICS · BUILT WITH REACT + RECHARTS</div>
+            <div className="flex gap-4">
+              <span>DATA: FIFA · STATSBOMB</span>
+              <span style={{ color: "var(--color-green)" }}>● LIVE</span>
+            </div>
           </div>
+          <div className="fifa-stripe absolute left-0 right-0 bottom-0" style={{ height: 8 }} aria-hidden />
         </footer>
       </main>
     </div>
   );
 }
 
+const SECTION_COLORS: Record<string, string> = {
+  "01": "#E8143C", "02": "#0033A0", "03": "#7B2D8B", "04": "#00A651", "05": "#F47920",
+};
+
 function SectionHeader({ index, label, title, badge, badgeAccent = "pitch" }: { index: string; label: string; title: string; badge?: string; badgeAccent?: "pitch" | "accent" | "cyan" | "magenta" }) {
+  const idxColor = SECTION_COLORS[index] ?? "var(--accent)";
   return (
     <div className="flex items-end justify-between gap-4 flex-wrap">
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-xs font-mono uppercase tracking-[0.25em] text-pitch">{index} — {label}</p>
+        <div className="flex items-center gap-2 mb-3">
+          <p
+            className="text-xs font-mono uppercase font-bold"
+            style={{ letterSpacing: "0.2em", color: idxColor }}
+          >
+            {index} — {label}
+          </p>
           {badge && (
             <span
               className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-sm border"
@@ -501,7 +519,12 @@ function SectionHeader({ index, label, title, badge, badgeAccent = "pitch" }: { 
             </span>
           )}
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">{title}</h2>
+        <h2
+          className="text-3xl sm:text-[36px] font-black tracking-tight leading-[1.05]"
+          style={{ letterSpacing: "-0.02em", color: "var(--color-text-1)" }}
+        >
+          {title}
+        </h2>
       </div>
       <div className="h-px flex-1 max-w-md bg-gradient-to-r from-border to-transparent hidden sm:block" />
     </div>
