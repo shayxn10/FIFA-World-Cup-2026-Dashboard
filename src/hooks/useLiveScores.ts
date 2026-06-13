@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 
-const API_BASE = "https://v3.football.api-sports.io";
-const LEAGUE_ID = 1;
-const SEASON = 2026;
-const CACHE_KEY = "wc2026_live_scores";
+const BASE = "https://api.football-data.org/v4";
+const COMPETITION = "WC";
+const CACHE_KEY = "wc2026_live_scores_v2";
 const TOURNAMENT_START = new Date("2026-06-11T15:00:00-06:00");
 const TOURNAMENT_END = new Date("2026-07-19T23:59:59-04:00");
 
+// Kept the same shape the UI already consumes so components don't have to change.
 export interface ApiFixture {
-  fixture: { id: number; date: string; status: { short: string; elapsed?: number | null }; venue?: { name?: string } };
+  fixture: {
+    id: number;
+    date: string;
+    status: { short: string; elapsed?: number | null };
+    venue?: { name?: string };
+  };
   teams: {
     home: { id: number; name: string; logo: string };
     away: { id: number; name: string; logo: string };
@@ -23,6 +28,47 @@ export function currentPhase(now = new Date()): Phase {
   if (now < TOURNAMENT_START) return "pre";
   if (now > TOURNAMENT_END) return "post";
   return "live";
+}
+
+interface FDMatch {
+  id: number;
+  utcDate: string;
+  status: "SCHEDULED" | "TIMED" | "IN_PLAY" | "PAUSED" | "FINISHED" | "POSTPONED" | "SUSPENDED" | "CANCELED";
+  matchday?: number;
+  stage?: string;
+  group?: string | null;
+  homeTeam: { id: number; name: string; shortName?: string; crest?: string };
+  awayTeam: { id: number; name: string; shortName?: string; crest?: string };
+  score: { fullTime: { home: number | null; away: number | null } };
+  venue?: string;
+}
+
+function mapStatus(s: FDMatch["status"]): string {
+  switch (s) {
+    case "IN_PLAY": return "2H";
+    case "PAUSED": return "HT";
+    case "FINISHED": return "FT";
+    case "SCHEDULED":
+    case "TIMED": return "NS";
+    default: return s;
+  }
+}
+
+function mapMatch(m: FDMatch): ApiFixture {
+  return {
+    fixture: {
+      id: m.id,
+      date: m.utcDate,
+      status: { short: mapStatus(m.status) },
+      venue: m.venue ? { name: m.venue } : undefined,
+    },
+    teams: {
+      home: { id: m.homeTeam.id, name: m.homeTeam.shortName || m.homeTeam.name, logo: m.homeTeam.crest || "" },
+      away: { id: m.awayTeam.id, name: m.awayTeam.shortName || m.awayTeam.name, logo: m.awayTeam.crest || "" },
+    },
+    goals: { home: m.score?.fullTime?.home ?? null, away: m.score?.fullTime?.away ?? null },
+    league: { round: m.group || m.stage || (m.matchday ? `Matchday ${m.matchday}` : undefined) },
+  };
 }
 
 interface State {
@@ -63,74 +109,77 @@ export function useLiveScores() {
   const lastFetchRef = useRef<number>(cached?.ts ?? 0);
 
   useEffect(() => {
-    const apiKey =
-      (import.meta.env.VITE_FOOTBALL_API_KEY as string | undefined) ||
-      "5f656d4133aa35f796627d8d1e4ccdf8";
+    const apiKey = import.meta.env.VITE_FOOTBALL_DATA_KEY as string | undefined;
     if (!apiKey) {
       setState(s => ({ ...s, loading: false, error: "no-api-key" }));
       return;
     }
 
     let cancelled = false;
+    const headers = { "X-Auth-Token": apiKey };
+
+    async function fetchMatches(params: string): Promise<FDMatch[]> {
+      const res = await fetch(`${BASE}/competitions/${COMPETITION}/matches${params}`, { headers });
+      if (res.status === 429) {
+        const err = new Error("rate-limit");
+        (err as Error & { code?: number }).code = 429;
+        throw err;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return (data.matches as FDMatch[]) ?? [];
+    }
 
     async function fetchOnce(): Promise<void> {
       const phase = currentPhase();
       if (phase === "post") return;
 
       const now = Date.now();
-      if (now - lastFetchRef.current < 30_000) return;
-      const h = new Date().getHours();
-      if (h >= 2 && h < 8) return;
-
-      let url: string;
-      if (phase === "pre") {
-        url = `${API_BASE}/fixtures?league=${LEAGUE_ID}&season=${SEASON}&next=5`;
-      } else {
-        url = `${API_BASE}/fixtures?league=${LEAGUE_ID}&season=${SEASON}&live=all`;
+      // Rate-limit guard: never fetch more than once per 60s.
+      if (now - lastFetchRef.current < 60_000) {
+        schedule();
+        return;
       }
 
       try {
-        const res = await fetch(url, { headers: { "x-apisports-key": apiKey! } });
-        if (res.status === 429) {
-          intervalMs.current = Math.min(intervalMs.current * 2, 24 * 60 * 60 * 1000);
-          schedule();
-          return;
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        let fixtures: ApiFixture[] = json.response ?? [];
-
-        if (phase === "live" && fixtures.length === 0) {
-          const today = new Date().toISOString().slice(0, 10);
-          const r2 = await fetch(
-            `${API_BASE}/fixtures?league=${LEAGUE_ID}&season=${SEASON}&date=${today}`,
-            { headers: { "x-apisports-key": apiKey! } },
-          );
-          if (r2.ok) {
-            const j2 = await r2.json();
-            fixtures = j2.response ?? [];
+        let matches: FDMatch[] = [];
+        if (phase === "pre") {
+          matches = await fetchMatches(`?status=SCHEDULED`);
+          matches = matches.slice(0, 5);
+        } else {
+          matches = await fetchMatches(`?status=IN_PLAY`);
+          if (matches.length === 0) {
+            const today = new Date().toISOString().slice(0, 10);
+            matches = await fetchMatches(`?dateFrom=${today}&dateTo=${today}`);
           }
         }
 
         if (cancelled) return;
+        const fixtures = matches.map(mapMatch);
         lastFetchRef.current = Date.now();
         writeCache(fixtures);
         setState({ fixtures, phase, loading: false, error: null, lastFetch: Date.now() });
 
         const hasLive = fixtures.some(f => ["1H","2H","HT","ET","P","LIVE"].includes(f.fixture.status.short));
         if (phase === "pre") {
-          intervalMs.current = 0;
+          intervalMs.current = 0; // one-shot
         } else if (hasLive) {
-          intervalMs.current = 10 * 60 * 1000;
+          intervalMs.current = 2 * 60 * 1000; // 2 min
         } else if (fixtures.length > 0) {
-          intervalMs.current = 60 * 60 * 1000;
+          intervalMs.current = 30 * 60 * 1000; // 30 min
         } else {
-          intervalMs.current = 0;
+          intervalMs.current = 60 * 60 * 1000; // 1 hour
         }
         schedule();
       } catch (err) {
         if (cancelled) return;
-        setState(s => ({ ...s, loading: false, error: (err as Error).message }));
+        const e = err as Error & { code?: number };
+        if (e.code === 429) {
+          intervalMs.current = 2 * 60 * 1000;
+          schedule();
+          return;
+        }
+        setState(s => ({ ...s, loading: false, error: e.message }));
       }
     }
 
